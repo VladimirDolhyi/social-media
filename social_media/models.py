@@ -19,6 +19,7 @@ class Profile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, unique=True
     )
+    username = models.CharField(max_length=255, unique=True)
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     bio = models.TextField(blank=True)
@@ -31,7 +32,7 @@ class Profile(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     def __str__(self):
-        return self.full_name
+        return self.username
 
 
 class Follow(models.Model):
@@ -70,7 +71,7 @@ class Post(models.Model):
         related_name="posts",
         on_delete=models.CASCADE
     )
-    title = models.CharField(max_length=255, default="Untitled Post")
+    title = models.CharField(max_length=255, unique=True)
     content = models.TextField()
     image = models.ImageField(upload_to="post_images/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -95,14 +96,20 @@ class Comment(models.Model):
         return f"{self.user} comments {self.post}"
 
 
-class Like(models.Model):
+class PostReaction(models.Model):
+    class Likes(models.TextChoices):
+        LIKE = "Like"
+        UNLIKE = "Unlike"
+
+    reaction = models.TextField(max_length=10, choices=Likes.choices)
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        related_name="likes",
+        related_name="reactions",
         on_delete=models.CASCADE
     )
     post = models.ForeignKey(
-        Post, related_name="likes", on_delete=models.CASCADE
+        Post, related_name="reactions", on_delete=models.CASCADE
     )
 
     def __str__(self):
