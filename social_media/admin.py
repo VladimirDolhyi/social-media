@@ -1,7 +1,9 @@
 from django.contrib import admin
+from django.contrib.auth.models import Group
 
 from social_media.models import Post, Profile, Follow, Comment, Like
 
+admin.site.unregister(Group)
 admin.site.register(Profile)
 admin.site.register(Follow)
 admin.site.register(Post)
