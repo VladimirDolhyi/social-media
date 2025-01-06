@@ -26,7 +26,7 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = "__all__"
-        read_only_fields = ["id", "user",]
+        read_only_fields = ["id", "user", ]
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -35,4 +35,4 @@ class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostReaction
         fields = "__all__"
-        read_only_fields = ["id", "user",]
+        read_only_fields = ["id", "user", ]

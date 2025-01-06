@@ -6,21 +6,25 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from social_media.models import Profile, Follow, Post, PostReaction, Comment
+from social_media.permissions import IsOwnerOrReadOnly
 from social_media.serializers import (
     ProfileSerializer,
     FollowSerializer,
     PostSerializer,
-    LikeSerializer, CommentSerializer,
+    LikeSerializer,
+    CommentSerializer,
 )
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         queryset = self.queryset
@@ -62,6 +66,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 
 class FollowUserView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def post(self, request, profile_id):
         profile_to_follow = get_object_or_404(Profile, id=profile_id)
@@ -78,8 +83,7 @@ class FollowUserView(APIView):
 
         if created:
             return Response(
-                {"message": f"You are now following"
-                            f"{profile_to_follow.username}."},
+                {"message": f"You are now following" f"{profile_to_follow.username}."},
                 status=status.HTTP_201_CREATED,
             )
         return Response(
@@ -89,6 +93,7 @@ class FollowUserView(APIView):
 
 
 class UnfollowUserView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def post(self, request, profile_id):
         profile_to_unfollow = get_object_or_404(Profile, id=profile_id)
@@ -99,8 +104,7 @@ class UnfollowUserView(APIView):
             )
             follow_instance.delete()
             return Response(
-                {"message": f"You have unfollowed"
-                            f"{profile_to_unfollow.username}."},
+                {"message": f"You have unfollowed" f"{profile_to_unfollow.username}."},
                 status=status.HTTP_204_NO_CONTENT,
             )
         except Follow.DoesNotExist:
@@ -111,6 +115,8 @@ class UnfollowUserView(APIView):
 
 
 class FollowingListView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
     def get(self, request):
         following = request.user.following.all()
         serializer = FollowSerializer(following, many=True)
@@ -118,6 +124,8 @@ class FollowingListView(APIView):
 
 
 class FollowersListView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
     def get(self, request):
         followers = request.user.followers.all()
         serializer = FollowSerializer(followers, many=True)
@@ -130,6 +138,7 @@ User = get_user_model()
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -140,9 +149,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
         if self.action == "retrieve":
             user_posts = self.request.user.posts.all()
-            following_users = User.objects.filter(
-                followers__follower=self.request.user
-            )
+            following_users = User.objects.filter(followers__follower=self.request.user)
             following_posts = Post.objects.filter(user__in=following_users)
             combined_posts = user_posts | following_posts
             queryset = combined_posts.distinct()
@@ -195,17 +202,16 @@ class PostViewSet(viewsets.ModelViewSet):
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = PostReaction.objects.all()
     serializer_class = LikeSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         user = self.request.user
         subquery = PostReaction.objects.filter(
-            user=user,
-            reaction=PostReaction.Likes.LIKE,
-            post=OuterRef('post')
-        ).order_by('-id')
+            user=user, reaction=PostReaction.Likes.LIKE, post=OuterRef("post")
+        ).order_by("-id")
 
         return PostReaction.objects.filter(
-            id=Subquery(subquery.values('id'))
+            id=Subquery(subquery.values("id"))
         ).distinct()
 
     def perform_create(self, serializer):
@@ -224,6 +230,7 @@ class LikeViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
