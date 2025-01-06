@@ -73,7 +73,9 @@ class Post(models.Model):
     )
     title = models.CharField(max_length=255, unique=True)
     content = models.TextField()
-    image = models.ImageField(upload_to="post_images/", blank=True, null=True)
+    image = models.ImageField(
+        upload_to=post_image_file_path, blank=True, null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     hashtags = models.CharField(max_length=255, blank=True)
 
@@ -101,7 +103,7 @@ class PostReaction(models.Model):
         LIKE = "Like"
         UNLIKE = "Unlike"
 
-    reaction = models.TextField(max_length=10, choices=Likes.choices)
+    reaction = models.CharField(max_length=10, choices=Likes.choices)
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
